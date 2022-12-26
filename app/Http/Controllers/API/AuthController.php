@@ -20,14 +20,14 @@ class AuthController extends Controller
         if(isset($request->phone_no)){
             $rules = [
                 'username' =>'required',
-                'phone_no' => 'required',
+                'phone_no' => 'required|unique:users,phone_no',
                 'email' => 'required|email|unique:users',
             ];
         }else{
             $rules = [
                 'username' =>'required',
                 'email' => 'required|email|unique:users',
-                'password' => 'required',
+                'password' => 'required|min:8|max:8',
             ];
             $user_input['password'] = bcrypt($user_input['password']);
         }
@@ -57,22 +57,16 @@ class AuthController extends Controller
 
     public function login(Request $request){
         $user = [];
-        if(isset($request->username) && isset($request->password)){
+        if(isset($request->username) && isset($request->password)){ 
             $valid = Auth::attempt(['username'=>$request->username, 'password'=>$request->password]);
                 if($valid){
                     $user = Auth::user();
-                    $user_id = $user->id;
                 } 
+        }else if(isset($request->phone_no)){ 
+            $user = User::where('phone_no', $request->phone_no)->first();
         }
-
-       /* 
-        else if(isset($request->phone_no) && isset($request->otp_code)){
-            $user = DB::table('users')->where([['phone_no', '=', $request->phone_no],['otp_code','=',$request->otp_code]])->get();
-            $user_id = $user[0]->id;
-        }
-        */
+        
         if(!empty($user)){
-            $user = User::find($user_id);
             $success['token'] = $user->createToken('MyApp')->plainTextToken;
             $success['user_data'] = $user;
             $response = [
